@@ -32,7 +32,7 @@ public class WordMapMergeTask implements Callable<LinkedHashMap<String, ArrayLis
                 ))
                 .entrySet()
                 .stream()
-                .sorted(Map.Entry.comparingByKey())
+                .sorted(Map.Entry.comparingByValue(new FileFreq.SortByFreq().reversed()))
                 .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue,
                         (v1, v2) -> v1, LinkedHashMap::new));
         return uniqueSets;
