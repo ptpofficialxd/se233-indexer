@@ -24,12 +24,15 @@ import java.util.concurrent.ExecutorCompletionService;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.stream.Collectors;
 
 public class MainViewController {
     LinkedHashMap<String, ArrayList<FileFreq>> uniqueSets;
+
     @FXML
     private ListView<String> inputListView;
     ArrayList<String> listViewPath = new ArrayList<>();
+
     @FXML
     private Button startButton;
     @FXML
@@ -39,11 +42,9 @@ public class MainViewController {
     private Scene scene;
     @FXML
     public void initialize() {
-
         exitProgram.setOnAction(event -> {
             Launcher.stage.close();
         });
-
         inputListView.setOnDragOver(event -> {
             Dragboard db = event.getDragboard();
             final boolean isAccepted = db.getFiles().get(0).getName().toLowerCase().endsWith(".pdf");
@@ -63,6 +64,7 @@ public class MainViewController {
                 for (int i = 0; i < total_files; i++) {
                     File file = db.getFiles().get(i);
                     filePath = file.getAbsolutePath();
+
                     listViewPath.add(filePath);
                     inputListView.getItems().add(file.getName());
                 }
@@ -105,20 +107,28 @@ public class MainViewController {
                             e.printStackTrace();
                         }
                     }
+
                     try {
                         WordMapMergeTask merger = new WordMapMergeTask(wordMap);
                         Future<LinkedHashMap<String, ArrayList<FileFreq>>> future = executor.submit(merger);
                         uniqueSets = future.get();
 
-                        for(String word : uniqueSets.keySet()){
+                        uniqueSets = uniqueSets.entrySet()
+                                .stream()
+                                .collect(Collectors.toMap(map -> {
+                                    String addition = " (";
+                                    for (int i=0;i< map.getValue().size();i++) {
+                                        addition = addition + map.getValue().get(i).getFreq();
+                                        if (i == map.getValue().size() - 1) {
+                                            addition+=")";
+                                        } else {
+                                            addition+=",";
+                                        }
+                                    }
+                                    return map.getKey()+addition;
+                                }, e -> e.getValue(), (fileFreqs, fileFreqs2) -> fileFreqs, () -> new LinkedHashMap<String, ArrayList<FileFreq>>()));
 
-                            ArrayList<Integer> wordFreq = new ArrayList<>();
-                            for(FileFreq f : uniqueSets.get(word)){
-                                wordFreq.add(f.getFreq());
-                            }
-                        }
-
-                        listView.getItems().addAll(uniqueSets.keySet());
+                        listView.getItems().addAll(uniqueSets.keySet());//ถ้าใส่อันนี้ pop up ขึ้นแต่เลขข้างหลังไม่ขึ้น
 
                     } catch (Exception e) {
                         e.printStackTrace();
@@ -126,9 +136,7 @@ public class MainViewController {
                         executor.shutdown();
                     }
                     return null;
-
                 }
-
             };
             processTask.setOnSucceeded(e -> {
                 Launcher.stage.getScene().setRoot(bgRoot);
@@ -143,7 +151,7 @@ public class MainViewController {
             ListView<FileFreq> popupListView = new ListView<>();
             LinkedHashMap<FileFreq,String> lookupTable = new LinkedHashMap<>();
 
-            for (FileFreq listOfLink : listOfLinks) {
+            for (FileFreq listOfLink : listOfLinks) { //คาดว่าต้องแก้บรรทัดนี้
                 lookupTable.put(listOfLink, listOfLink.getPath());
                 popupListView.getItems().add(listOfLink);
             }
@@ -156,11 +164,10 @@ public class MainViewController {
             popup.getContent().add(popupListView);
             popup.show(Launcher.stage);
 
-
             popupListView.setOnKeyPressed(esc -> {
                 if(esc.getCode() == KeyCode.ESCAPE){
+                    //Launcher.stage.close();
                     popupListView.setVisible(false);
-
                 }
             });
         });
