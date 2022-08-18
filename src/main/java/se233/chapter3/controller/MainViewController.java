@@ -32,7 +32,6 @@ public class MainViewController {
     @FXML
     private ListView<String> inputListView;
     ArrayList<String> listViewPath = new ArrayList<>();
-
     @FXML
     private Button startButton;
     @FXML
